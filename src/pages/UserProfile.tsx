@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Award, Trophy, Calendar, BookOpen, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import BridgyAI from "@/components/BridgyAI";
 
 // Sample data for different users
 const userProfiles = {
@@ -315,6 +316,7 @@ const UserProfile: React.FC = () => {
         </div>
       </main>
       <Footer />
+      <BridgyAI />
     </div>
   );
 };

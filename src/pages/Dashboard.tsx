@@ -13,6 +13,7 @@ import CodePlayground from "@/components/CodePlayground";
 import MotivationalQuote from "@/components/MotivationalQuote";
 import QuickStats from "@/components/QuickStats";
 import ContinueLearning from "@/components/ContinueLearning";
+import BridgyAI from "@/components/BridgyAI";
 import { 
   Home, BookOpen, Trophy, Mic, Code2, Award, MessageSquare, 
   Settings as SettingsIcon, LogOut, ChevronRight
@@ -224,6 +225,8 @@ const Dashboard: React.FC = () => {
           </SidebarInset>
         </SidebarProvider>
       </div>
+      {/* Bridgy AI Assistant */}
+      <BridgyAI />
     </div>
   );
 };

@@ -97,7 +97,7 @@ const Index = () => {
             <div>10,000+ Students</div>
             <div>15+ Achievement Badges</div>
           </div>
-        </nav>
+        </div>
       </section>
 
       {/* Features Grid */}

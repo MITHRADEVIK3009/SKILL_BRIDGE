@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { useParams } from "react-router-dom";
 import Header from "@/components/Header";
+import BridgyAI from "@/components/BridgyAI";
 import { SidebarProvider, Sidebar, SidebarContent, SidebarMenu, SidebarMenuItem, 
   SidebarMenuButton, SidebarGroup, SidebarGroupLabel, SidebarGroupContent, SidebarHeader,
   SidebarFooter, SidebarInset } from "@/components/ui/sidebar";
@@ -461,6 +462,8 @@ const Courses: React.FC = () => {
           </SidebarInset>
         </SidebarProvider>
       </div>
+      {/* Bridgy AI Assistant */}
+      <BridgyAI />
     </div>
   );
 };

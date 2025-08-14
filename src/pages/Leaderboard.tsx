@@ -1,6 +1,7 @@
 
 import React, { useState } from "react";
 import Header from "@/components/Header";
+import BridgyAI from "@/components/BridgyAI";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -87,6 +88,8 @@ const Leaderboard: React.FC = () => {
           />
         </div>
       </main>
+      {/* Bridgy AI Assistant */}
+      <BridgyAI />
     </div>
   );
 };
