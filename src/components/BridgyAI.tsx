@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, MicOff, MessageSquare, X, User, Bot } from 'lucide-react';
+import { Mic, MicOff, MessageSquare, X, User, Bot, Send, Languages } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
+import { Input } from './ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { useVoiceRecognition } from '../hooks/useVoiceRecognition';
 import { useTextToSpeech } from '../hooks/useTextToSpeech';
 
@@ -17,12 +19,14 @@ const BridgyAI: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      text: 'Hi! I\'m Bridgy AI, your personal learning assistant. I can help you navigate SkillBridge, track your progress, or answer questions about coding. Try saying "Show my progress" or "Help me with courses"!',
+      text: 'Hi! I\'m Bridgy AI, your personal learning assistant. I can help you navigate SkillBridge, track your progress, or answer questions about coding. What would you like me to help you with today?',
       isUser: false,
       timestamp: new Date()
     }
   ]);
   const [isListening, setIsListening] = useState(false);
+  const [textInput, setTextInput] = useState('');
+  const [selectedLanguage, setSelectedLanguage] = useState('en-US');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const { speak } = useTextToSpeech();
@@ -201,23 +205,74 @@ const BridgyAI: React.FC = () => {
               </div>
             </div>
 
-            {/* Voice Controls */}
-            <div className="p-4 border-t flex justify-center">
-              <Button
-                onClick={toggleListening}
-                className={`h-12 w-12 rounded-full transition-all duration-300 ${
-                  isListening
-                    ? 'bg-red-500 hover:bg-red-600 animate-pulse'
-                    : 'bg-blue-600 hover:bg-blue-700'
-                }`}
-                size="sm"
-              >
-                {isListening ? (
-                  <MicOff className="h-5 w-5 text-white" />
-                ) : (
-                  <Mic className="h-5 w-5 text-white" />
-                )}
-              </Button>
+            {/* Text Input */}
+            <div className="p-3 border-t">
+              <div className="flex gap-2">
+                <Input
+                  value={textInput}
+                  onChange={(e) => setTextInput(e.target.value)}
+                  placeholder="Type your question..."
+                  className="flex-1 text-sm"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && textInput.trim()) {
+                      handleVoiceCommand(textInput);
+                      setTextInput('');
+                    }
+                  }}
+                />
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    if (textInput.trim()) {
+                      handleVoiceCommand(textInput);
+                      setTextInput('');
+                    }
+                  }}
+                  disabled={!textInput.trim()}
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Language & Voice Controls */}
+            <div className="p-3 border-t">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Languages className="h-4 w-4 text-gray-600" />
+                  <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+                    <SelectTrigger className="w-32 h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="en-US">English</SelectItem>
+                      <SelectItem value="es-ES">Spanish</SelectItem>
+                      <SelectItem value="fr-FR">French</SelectItem>
+                      <SelectItem value="de-DE">German</SelectItem>
+                      <SelectItem value="hi-IN">Hindi</SelectItem>
+                      <SelectItem value="zh-CN">Chinese</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  onClick={toggleListening}
+                  className={`h-10 w-10 rounded-full transition-all duration-300 ${
+                    isListening
+                      ? 'bg-red-500 hover:bg-red-600 animate-pulse'
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
+                  size="sm"
+                >
+                  {isListening ? (
+                    <MicOff className="h-4 w-4 text-white" />
+                  ) : (
+                    <Mic className="h-4 w-4 text-white" />
+                  )}
+                </Button>
+              </div>
+              <div className="text-xs text-gray-500 text-center">
+                {isListening ? 'Listening... Speak now!' : 'Click mic to speak or type above'}
+              </div>
             </div>
           </Card>
         </div>

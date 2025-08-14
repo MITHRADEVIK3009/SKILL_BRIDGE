@@ -138,7 +138,11 @@ CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON profiles
 CREATE TRIGGER update_courses_updated_at BEFORE UPDATE ON courses
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- Insert sample badges
+-- Add unique constraints for ON CONFLICT
+ALTER TABLE courses ADD CONSTRAINT IF NOT EXISTS unique_course_title UNIQUE (title);
+ALTER TABLE lessons ADD CONSTRAINT IF NOT EXISTS unique_lesson_title_per_course UNIQUE (course_id, title);
+
+-- Insert sample badges (name is already UNIQUE)
 INSERT INTO badges (name, description, icon_url, category, points_required) VALUES
 ('First Steps', 'Complete your first lesson', '🎯', 'achievement', 0),
 ('Voice Explorer', 'Use voice assistant 5 times', '🎤', 'voice', 5),
@@ -187,7 +191,7 @@ CROSS JOIN (
     ('File Handling', 'Read and write files in Python', 6, 35, 15)
 ) AS lesson(title, description, order_index, duration_minutes, points_reward)
 WHERE c.title = 'Python Fundamentals'
-ON CONFLICT DO NOTHING;
+ON CONFLICT (course_id, title) DO NOTHING;
 
 -- Set up Row Level Security (RLS)
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
