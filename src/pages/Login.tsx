@@ -5,9 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Eye, EyeOff, Brain, CheckCircle, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, Brain, CheckCircle, AlertCircle, ArrowLeft, PlayCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { signInDemoUser } from "@/lib/demo-user";
+import { useNavigation } from "@/hooks/useNavigation";
 import BridgyAI from "@/components/BridgyAI";
 
 const Login = () => {
@@ -264,10 +266,53 @@ const Login = () => {
           </CardContent>
         </Card>
 
+        {/* Demo User Button */}
+        <div className="mt-4">
+          <Card className="border-amber-200 bg-amber-50">
+            <CardContent className="p-4">
+              <div className="text-center">
+                <h3 className="font-semibold text-amber-800 mb-2">Try Demo Account</h3>
+                <p className="text-sm text-amber-700 mb-3">
+                  Experience SkillBridge with a pre-configured demo account
+                </p>
+                <Button 
+                  onClick={async () => {
+                    setLoading(true);
+                    try {
+                      await signInDemoUser();
+                      toast({
+                        title: "Demo account loaded!",
+                        description: "Welcome to SkillBridge demo experience",
+                        duration: 3000,
+                      });
+                      navigate("/dashboard");
+                    } catch (error: any) {
+                      toast({
+                        title: "Demo login failed",
+                        description: error.message || "Could not load demo account",
+                        variant: "destructive",
+                      });
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  variant="outline"
+                  className="w-full border-amber-300 hover:bg-amber-100"
+                  disabled={loading}
+                >
+                  <PlayCircle className="h-4 w-4 mr-2" />
+                  {loading ? "Loading Demo..." : "Try Demo Account"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Back to Home */}
         <div className="mt-6 text-center">
-          <Link to="/" className="text-gray-600 hover:text-gray-800 text-sm">
-            ← Back to Home
+          <Link to="/" className="text-gray-600 hover:text-gray-800 text-sm flex items-center justify-center gap-1">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Home
           </Link>
         </div>
       </div>
