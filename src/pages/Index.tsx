@@ -1,323 +1,241 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-import LearningPath from "@/components/LearningPath";
-import DashboardFeature from "@/components/DashboardFeature";
-import VoiceAssistant from "@/components/VoiceAssistant";
-import CodePlayground from "@/components/CodePlayground";
-import DailyChallenge from "@/components/DailyChallenge";
+import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import {
-  BookOpen,
-  Code2,
-  Lightbulb,
-  Mic,
-  BarChart3,
-  Trophy,
-  ArrowRight,
-} from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Mic, Brain, Trophy, Users, Star, ArrowRight, Github, Linkedin, MessageSquare } from "lucide-react";
+import BridgyAI from "@/components/BridgyAI";
 
 const Index = () => {
-  const navigate = useNavigate();
-  const [currentView, setCurrentView] = useState<"splash" | "paths" | "dashboard">("splash");
+  const [hoveredFeature, setHoveredFeature] = useState<number | null>(null);
 
-  const handleGetStarted = () => {
-    setCurrentView("paths");
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  const handleStartLearning = () => {
-    setCurrentView("dashboard");
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  const handleTryVoiceAssistant = () => {
-    // Navigate to a dedicated Voice Assistant page
-    navigate("/voice-assistant");
-  };
-
-  const renderSplashScreen = () => (
-    <>
-      <section className="bg-gradient-to-b from-background to-accent py-20">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row items-center justify-between">
-            <div className="md:w-1/2 mb-10 md:mb-0">
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-6 gradient-text animate-fade-in">
-                Master Coding Skills with Voice Technology
-              </h1>
-              <p className="text-lg mb-8 text-muted-foreground animate-fade-in" style={{ animationDelay: "0.2s" }}>
-                Learn to code through interactive lessons, voice assistance, and daily challenges
-                that adapt to your skill level.
-              </p>
-              <div className="flex flex-wrap gap-4 animate-fade-in" style={{ animationDelay: "0.4s" }}>
-                <Button size="lg" className="gradient-bg" onClick={handleGetStarted}>
-                  Get Started
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-                <Button size="lg" variant="outline" onClick={handleTryVoiceAssistant}>
-                  <Mic className="mr-2 h-5 w-5" />
-                  Try Voice Assistant
-                </Button>
-              </div>
-            </div>
-            <div className="md:w-1/2 flex justify-center animate-fade-in" style={{ animationDelay: "0.6s" }}>
-              <div className="relative">
-                <div className="w-72 h-72 md:w-96 md:h-96 bg-primary/10 rounded-full flex items-center justify-center animate-pulse-glow">
-                  <div className="w-60 h-60 md:w-80 md:h-80 bg-primary/20 rounded-full flex items-center justify-center">
-                    <div className="w-48 h-48 md:w-64 md:h-64 gradient-bg rounded-full flex items-center justify-center shadow-glow-indigo animate-float">
-                      <Code2 className="h-20 w-20 md:h-24 md:w-24 text-white" />
-                    </div>
-                  </div>
-                </div>
-                <div className="absolute top-0 right-0 w-16 h-16 bg-skillbridge-blue rounded-full shadow-glow-blue animate-float" style={{ animationDelay: "1s" }}></div>
-                <div className="absolute bottom-8 left-0 w-12 h-12 bg-skillbridge-purple rounded-full shadow-glow-indigo animate-float" style={{ animationDelay: "1.5s" }}></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-16">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Why Choose SkillBridge?</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              Our platform combines modern learning techniques with innovative technology
-              to create an engaging educational experience.
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="bg-card p-6 rounded-lg shadow-md border border-border">
-              <div className="mb-4 text-primary">
-                <Mic className="h-10 w-10" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Voice Assistant</h3>
-              <p className="text-muted-foreground">
-                Ask questions naturally and get instant voice responses to help you learn faster.
-              </p>
-            </div>
-            
-            <div className="bg-card p-6 rounded-lg shadow-md border border-border">
-              <div className="mb-4 text-primary">
-                <BookOpen className="h-10 w-10" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Structured Learning</h3>
-              <p className="text-muted-foreground">
-                Follow a clear path from basics to advanced concepts with bite-sized lessons.
-              </p>
-            </div>
-            
-            <div className="bg-card p-6 rounded-lg shadow-md border border-border">
-              <div className="mb-4 text-primary">
-                <Code2 className="h-10 w-10" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Interactive Coding</h3>
-              <p className="text-muted-foreground">
-                Practice what you learn immediately with our built-in code playground.
-              </p>
-            </div>
-            
-            <div className="bg-card p-6 rounded-lg shadow-md border border-border">
-              <div className="mb-4 text-primary">
-                <Lightbulb className="h-10 w-10" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Daily Challenges</h3>
-              <p className="text-muted-foreground">
-                Sharpen your skills with new problems every day to keep you motivated.
-              </p>
-            </div>
-            
-            <div className="bg-card p-6 rounded-lg shadow-md border border-border">
-              <div className="mb-4 text-primary">
-                <BarChart3 className="h-10 w-10" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Progress Tracking</h3>
-              <p className="text-muted-foreground">
-                Monitor your growth with detailed statistics and achievement badges.
-              </p>
-            </div>
-            
-            <div className="bg-card p-6 rounded-lg shadow-md border border-border">
-              <div className="mb-4 text-primary">
-                <Trophy className="h-10 w-10" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Gamified Experience</h3>
-              <p className="text-muted-foreground">
-                Earn points, climb the leaderboard, and unlock rewards as you learn.
-              </p>
-            </div>
-          </div>
-          
-          <div className="mt-12 text-center">
-            <Button size="lg" className="gradient-bg" onClick={handleGetStarted}>
-              Start Your Learning Journey
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-16 bg-accent">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Join Thousands of Successful Developers</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              Our graduates have landed jobs at top tech companies worldwide.
-              Start your coding journey today!
-            </p>
-          </div>
-          
-          <div className="flex justify-center">
-            <Button size="lg" className="gradient-bg" onClick={handleGetStarted}>
-              Get Started for Free
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-          </div>
-        </div>
-      </section>
-    </>
-  );
-
-  const renderLearningPaths = () => (
-    <section className="py-16">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4">Choose Your Learning Path</h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            Select the programming language or technology you want to master.
-            Each path is designed to take you from beginner to advanced.
-          </p>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <LearningPath
-            title="HTML & CSS"
-            description="Learn to build and style modern websites with responsive design."
-            difficulty="Beginner"
-            lessons={24}
-            icon="html"
-            onClick={handleStartLearning}
-          />
-          
-          <LearningPath
-            title="Java Programming"
-            description="Master object-oriented programming with Java for versatile applications."
-            difficulty="Intermediate"
-            lessons={36}
-            icon="java"
-            onClick={handleStartLearning}
-          />
-          
-          <LearningPath
-            title="PHP Development"
-            description="Build dynamic websites and server-side applications with PHP."
-            difficulty="Intermediate"
-            lessons={28}
-            icon="php"
-            onClick={handleStartLearning}
-          />
-          
-          <LearningPath
-            title="Python Mastery"
-            description="Learn Python for data science, web development, and automation."
-            difficulty="Beginner"
-            lessons={32}
-            icon="python"
-            onClick={handleStartLearning}
-          />
-          
-          <LearningPath
-            title="Node.js Backend"
-            description="Create scalable web applications with JavaScript on the server."
-            difficulty="Advanced"
-            lessons={30}
-            icon="node"
-            onClick={handleStartLearning}
-          />
-          
-          <LearningPath
-            title="MySQL & Databases"
-            description="Design and optimize databases for your applications."
-            difficulty="Intermediate"
-            lessons={22}
-            icon="mysql"
-            onClick={handleStartLearning}
-          />
-        </div>
-      </div>
-    </section>
-  );
-
-  const renderDashboard = () => (
-    <section className="py-16">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4">Welcome to Your Learning Dashboard</h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
-            Track your progress, take challenges, and continue your learning journey.
-          </p>
-        </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              <DashboardFeature
-                title="Continue Learning"
-                description="Resume from where you left off"
-                icon={BookOpen}
-                buttonText="Resume Course"
-                onClick={() => console.log("Resume course")}
-              />
-              
-              <DashboardFeature
-                title="Practice Coding"
-                description="Write and test code in our playground"
-                icon={Code2}
-                buttonText="Open Playground"
-                onClick={() => console.log("Open playground")}
-              />
-              
-              <DashboardFeature
-                title="Next Lesson"
-                description="Introduction to Functions"
-                icon={Lightbulb}
-                buttonText="Start Lesson"
-                onClick={() => console.log("Start lesson")}
-              />
-              
-              <DashboardFeature
-                title="Your Progress"
-                description="View your learning statistics"
-                icon={BarChart3}
-                buttonText="View Stats"
-                onClick={() => console.log("View stats")}
-              />
-            </div>
-            
-            <div className="mb-8">
-              <CodePlayground />
-            </div>
-          </div>
-          
-          <div className="space-y-8">
-            <DailyChallenge />
-            <VoiceAssistant />
-          </div>
-        </div>
-      </div>
-    </section>
-  );
+  const features = [
+    {
+      icon: <Mic className="h-8 w-8 text-blue-600" />,
+      title: "Voice-Powered Learning",
+      description: "Interactive voice commands in 10+ languages with ElevenLabs integration",
+      badge: "AI-Powered"
+    },
+    {
+      icon: <Trophy className="h-8 w-8 text-yellow-600" />,
+      title: "Advanced Gamification", 
+      description: "15+ achievement badges, XP system, streaks, and competitive leaderboards",
+      badge: "Engaging"
+    },
+    {
+      icon: <Brain className="h-8 w-8 text-purple-600" />,
+      title: "Smart Progress Tracking",
+      description: "Real-time analytics, personalized recommendations, and learning insights",
+      badge: "Intelligent"
+    },
+    {
+      icon: <Users className="h-8 w-8 text-green-600" />,
+      title: "Social Learning",
+      description: "Compete with peers, share achievements, and learn together",
+      badge: "Community"
+    }
+  ];
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <Header />
-      <main className="flex-grow">
-        {currentView === "splash" && renderSplashScreen()}
-        {currentView === "paths" && renderLearningPaths()}
-        {currentView === "dashboard" && renderDashboard()}
-      </main>
-      <Footer />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      {/* Header */}
+      <header className="container mx-auto px-4 py-6">
+        <nav className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+              <Brain className="h-6 w-6 text-white" />
+            </div>
+            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              SkillBridge
+            </span>
+          </div>
+          <div className="flex items-center gap-4">
+            <Link to="/login">
+              <Button variant="outline">Sign In</Button>
+            </Link>
+            <Link to="/signup">
+              <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+                Get Started
+              </Button>
+            </Link>
+          </div>
+        </nav>
+      </header>
+
+      {/* Hero Section */}
+      <section className="container mx-auto px-4 py-20 text-center">
+        <div className="max-w-4xl mx-auto">
+          <Badge className="mb-4 bg-blue-100 text-blue-800 hover:bg-blue-200">
+            🚀 AI-Powered Learning Platform
+          </Badge>
+          <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent leading-tight">
+            Transform Your Coding Education
+          </h1>
+          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+            Master programming with voice-interactive learning, gamification, and AI assistance. 
+            Join thousands of learners advancing their skills with SkillBridge.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <Link to="/signup">
+              <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-lg px-8 py-3">
+                Start Learning Free
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </Link>
+            <Link to="/voice-assistant">
+              <Button size="lg" variant="outline" className="text-lg px-8 py-3">
+                Try Voice Assistant
+                <Mic className="ml-2 h-5 w-5" />
+              </Button>
+            </Link>
+          </div>
+          <div className="flex items-center justify-center gap-6 mt-8 text-sm text-gray-500">
+            <div className="flex items-center gap-1">
+              <Star className="h-4 w-4 text-yellow-400 fill-current" />
+              <span>4.9/5 Rating</span>
+            </div>
+            <div>10,000+ Students</div>
+            <div>15+ Achievement Badges</div>
+          </div>
+        </nav>
+      </section>
+
+      {/* Features Grid */}
+      <section className="container mx-auto px-4 py-20">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl font-bold mb-4">Why Choose SkillBridge?</h2>
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            Experience the future of coding education with our innovative features designed for modern learners.
+          </p>
+        </div>
+        
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {features.map((feature, index) => (
+            <Card 
+              key={index}
+              className={`cursor-pointer transition-all duration-300 hover:shadow-lg ${
+                hoveredFeature === index ? 'scale-105 shadow-xl' : ''
+              }`}
+              onMouseEnter={() => setHoveredFeature(index)}
+              onMouseLeave={() => setHoveredFeature(null)}
+            >
+              <CardHeader className="text-center">
+                <div className="mb-4 flex justify-center">
+                  {feature.icon}
+                </div>
+                <Badge variant="secondary" className="mb-2 w-fit mx-auto">
+                  {feature.badge}
+                </Badge>
+                <CardTitle className="text-xl">{feature.title}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-center">
+                  {feature.description}
+                </CardDescription>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="container mx-auto px-4 py-20">
+        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-12 text-center text-white">
+          <h2 className="text-4xl font-bold mb-4">Ready to Start Your Journey?</h2>
+          <p className="text-xl mb-8 opacity-90">
+            Join SkillBridge today and transform the way you learn coding forever.
+          </p>
+          <Link to="/signup">
+            <Button size="lg" variant="secondary" className="text-lg px-8 py-3">
+              Create Free Account
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </Link>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-gray-900 text-white py-12">
+        <div className="container mx-auto px-4">
+          <div className="grid md:grid-cols-4 gap-8">
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+                  <Brain className="h-5 w-5 text-white" />
+                </div>
+                <span className="text-xl font-bold">SkillBridge</span>
+              </div>
+              <p className="text-gray-400 text-sm">
+                AI-powered learning platform for the next generation of developers.
+              </p>
+            </div>
+            
+            <div>
+              <h3 className="font-semibold mb-4">Platform</h3>
+              <ul className="space-y-2 text-sm text-gray-400">
+                <li><Link to="/courses" className="hover:text-white transition-colors">Courses</Link></li>
+                <li><Link to="/voice-assistant" className="hover:text-white transition-colors">Voice Assistant</Link></li>
+                <li><Link to="/leaderboard" className="hover:text-white transition-colors">Leaderboard</Link></li>
+              </ul>
+            </div>
+            
+            <div>
+              <h3 className="font-semibold mb-4">Account</h3>
+              <ul className="space-y-2 text-sm text-gray-400">
+                <li><Link to="/login" className="hover:text-white transition-colors">Sign In</Link></li>
+                <li><Link to="/signup" className="hover:text-white transition-colors">Sign Up</Link></li>
+                <li><Link to="/dashboard" className="hover:text-white transition-colors">Dashboard</Link></li>
+              </ul>
+            </div>
+            
+            <div>
+              <h3 className="font-semibold mb-4">My Account</h3>
+              <ul className="space-y-2 text-sm text-gray-400">
+                <li>
+                  <a 
+                    href="https://www.linkedin.com/in/mithradevi-k-63b4642b5" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="hover:text-white transition-colors flex items-center gap-2"
+                  >
+                    <Linkedin className="h-4 w-4" />
+                    LinkedIn
+                  </a>
+                </li>
+                <li>
+                  <a 
+                    href="https://github.com/MITHRADEVIK3009" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="hover:text-white transition-colors flex items-center gap-2"
+                  >
+                    <Github className="h-4 w-4" />
+                    GitHub
+                  </a>
+                </li>
+                <li>
+                  <a 
+                    href="https://medium.com/@mithradevi" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="hover:text-white transition-colors flex items-center gap-2"
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                    Medium
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+          
+          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400 text-sm">
+            <p>&copy; 2024 SkillBridge. Built with ❤️ for immersive coding education.</p>
+          </div>
+        </div>
+      </footer>
+
+      {/* Bridgy AI Assistant */}
+      <BridgyAI />
     </div>
   );
 };
