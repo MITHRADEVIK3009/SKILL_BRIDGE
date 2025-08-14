@@ -1,20 +1,19 @@
-# 🎯 SkillBridge - AI-Powered Voice Learning Platform
+# 🎯 SkillBridge – AI-Powered Voice Learning Platform
 
-**Transform your coding education with voice-interactive learning, gamification, and AI assistance**
+Transform your coding education with voice-interactive learning, gamification, and AI assistance.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/MITHRADEVIK3009/SKILL_BRIDGE)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![React](https://img.shields.io/badge/React-20232A?logo=react&logoColor=61DAFB)](https://reactjs.org/)
-[![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?logo=supabase&logoColor=white)](https://supabase.com/)
+**🚀 Deploy with:** Vercel | **📄 License:** MIT | **💻 Tech Stack:** TypeScript, React, Supabase
 
 ## ✨ Features
 
 ### 🔐 **Robust Authentication System**
 - Secure user registration with password strength validation
-- Social login (Google & Facebook OAuth)
-- Email verification and password recovery
-- Multi-language support
+- Social login (Google & Facebook OAuth)  
+  *(Display an extra page or formal message indicating this feature is not yet enabled or configured)*
+- Email verification and password recovery  
+  *(Same handling as social login — show a message that it is not yet configured)*
+- Multi-language support  
+  *(Multi-language support is provided in the authentication system covering UI language preferences and form validation messages)*
 
 ### 🎮 **Advanced Gamification**
 - **15 Achievement Badges** with smart detection

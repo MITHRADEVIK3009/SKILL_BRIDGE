@@ -29,7 +29,10 @@ const BridgyAI: React.FC = () => {
   const [selectedLanguage, setSelectedLanguage] = useState('en-US');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  const { speak } = useTextToSpeech();
+  const { playResponse: speak } = useTextToSpeech({
+    voiceId: 'default',
+    model: 'eleven_monolingual_v1'
+  });
   
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -93,7 +96,7 @@ const BridgyAI: React.FC = () => {
   };
 
   const { startListening, stopListening } = useVoiceRecognition({
-    onResult: handleVoiceCommand,
+    onTranscript: handleVoiceCommand,
     language: 'en-US'
   });
 

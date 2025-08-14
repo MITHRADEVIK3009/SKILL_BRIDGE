@@ -87,7 +87,7 @@ export const ragService = {
     await new Promise(resolve => setTimeout(resolve, 300));
     
     const lowerQuestion = question.toLowerCase();
-    let documents: Document[] = [];
+    const documents: Document[] = [];
     
     // Very basic keyword matching to simulate semantic search
     if (lowerQuestion.includes('javascript') || lowerQuestion.includes('js')) {
