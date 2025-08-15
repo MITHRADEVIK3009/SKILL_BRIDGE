@@ -1,192 +1,264 @@
 
-import { databaseService, LLMQuery } from '@/services/databaseService';
+// Simple RAG (Retrieval-Augmented Generation) Service
+// This is a lightweight implementation for demonstration purposes
 
 interface Document {
   id: string;
   content: string;
-  metadata: {
-    title: string;
-    source: string;
-    type: string;
-    timestamp?: string;
-  };
+  title: string;
+  category: string;
+  tags: string[];
 }
 
-interface RAGResponse {
-  answer: string;
-  sources: {
-    id: string;
-    title: string;
-    source: string;
-    relevance: number;
-  }[];
-  rawDocuments?: Document[];
+interface SearchResult {
+  document: Document;
+  score: number;
+  relevantText: string;
 }
 
-export const ragService = {
-  /**
-   * This simulates a RAG pipeline. In a real implementation, this would:
-   * 1. Take the user's query
-   * 2. Use an embedding model to convert it to a vector
-   * 3. Perform a similarity search in a vector database to find relevant documents
-   * 4. Pass the query + relevant documents to an LLM
-   * 5. Return the LLM's response and the sources used
-   */
-  async queryRAG(userId: number | null, question: string): Promise<RAGResponse> {
-    try {
-      console.log(`Processing RAG query: "${question}"`);
-      
-      // In a real implementation, this would be a call to your MongoDB-based RAG system
-      // For now, we'll simulate the process
-      
-      // 1. Simulate retrieving relevant documents
-      const relevantDocs = await this.simulateDocumentRetrieval(question);
-      
-      // 2. Simulate generating an answer with an LLM
-      const answer = await this.simulateAnswerGeneration(question, relevantDocs);
-      
-      // 3. Extract sources information
-      const sources = relevantDocs.map((doc, index) => ({
-        id: doc.id,
-        title: doc.metadata.title,
-        source: doc.metadata.source,
-        relevance: 1 - (index * 0.1) // Simulated relevance score
-      }));
-      
-      // 4. Log the query if userId is provided
-      if (userId) {
-        await databaseService.logLLMQuery({
-          user_id: userId,
-          query_text: question,
-          response_text: answer,
-          source_documents: sources,
-          llm_model: "simulated-rag-model"
-        });
-      }
-      
-      return {
-        answer,
-        sources,
-        rawDocuments: relevantDocs
-      };
-    } catch (error) {
-      console.error("Error in RAG query:", error);
-      return {
-        answer: "I encountered an error processing your question. Please try again later.",
-        sources: []
-      };
-    }
+// Enhanced knowledge base with 15 programming concepts for showcase
+const KNOWLEDGE_BASE: Document[] = [
+  {
+    id: '1',
+    title: 'JavaScript Basics',
+    content: 'JavaScript is a programming language that adds interactivity to websites. It runs in the browser and can manipulate HTML and CSS. Key concepts include variables, functions, objects, and event handling. Example: const greeting = "Hello World"; console.log(greeting);',
+    category: 'programming',
+    tags: ['javascript', 'basics', 'web', 'frontend', 'js']
   },
-  
-  /**
-   * Simulate document retrieval based on the question
-   * In a real implementation, this would query your vector database
-   */
-  async simulateDocumentRetrieval(question: string): Promise<Document[]> {
-    // Simulate delay for a database query
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    const lowerQuestion = question.toLowerCase();
-    const documents: Document[] = [];
-    
-    // Very basic keyword matching to simulate semantic search
-    if (lowerQuestion.includes('javascript') || lowerQuestion.includes('js')) {
-      documents.push({
-        id: 'doc-js-1',
-        content: 'JavaScript is a programming language that is one of the core technologies of the World Wide Web. JavaScript is high-level, often just-in-time compiled, and multi-paradigm.',
-        metadata: {
-          title: 'JavaScript Basics',
-          source: 'Web Development Course',
-          type: 'course_material'
-        }
-      });
-    }
-    
-    if (lowerQuestion.includes('react') || lowerQuestion.includes('component')) {
-      documents.push({
-        id: 'doc-react-1',
-        content: 'React is a free and open-source front-end JavaScript library for building user interfaces based on components. It is maintained by Meta and a community of individual developers and companies.',
-        metadata: {
-          title: 'React Framework',
-          source: 'Frontend Development Module',
-          type: 'course_material'
-        }
-      });
-    }
-    
-    if (lowerQuestion.includes('python') || lowerQuestion.includes('programming')) {
-      documents.push({
-        id: 'doc-python-1',
-        content: 'Python is an interpreted, high-level, general-purpose programming language. Its design philosophy emphasizes code readability with its use of significant indentation.',
-        metadata: {
-          title: 'Python Programming',
-          source: 'Backend Development Course',
-          type: 'course_material'
-        }
-      });
-    }
-    
-    // Add some generic documents if no specific matches
-    if (documents.length === 0) {
-      documents.push({
-        id: 'doc-gen-1',
-        content: 'Learning to code involves understanding programming concepts, practicing regularly, and building projects. Start with the fundamentals of a language and gradually tackle more complex topics.',
-        metadata: {
-          title: 'Coding Fundamentals',
-          source: 'Programming Basics',
-          type: 'general_guide'
-        }
-      });
-      
-      documents.push({
-        id: 'doc-gen-2',
-        content: 'Good coding practices include writing clean, readable code, using appropriate naming conventions, adding comments when necessary, and testing your code thoroughly.',
-        metadata: {
-          title: 'Coding Best Practices',
-          source: 'Software Engineering Principles',
-          type: 'general_guide'
-        }
-      });
-    }
-    
-    return documents;
+  {
+    id: '2',
+    title: 'Python Fundamentals',
+    content: 'Python is a high-level programming language known for its simplicity and readability. It\'s great for beginners and widely used in data science, web development, and automation. Example: print("Hello, World!") or name = input("What\'s your name?")',
+    category: 'programming',
+    tags: ['python', 'basics', 'data-science', 'automation', 'py']
   },
-  
-  /**
-   * Simulate generating an answer with an LLM
-   * In a real implementation, this would send the query and documents to an LLM API
-   */
-  async simulateAnswerGeneration(question: string, documents: Document[]): Promise<string> {
-    // Simulate delay for LLM processing
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const lowerQuestion = question.toLowerCase();
-    
-    // Very basic response generation based on the question and retrieved documents
-    if (documents.length === 0) {
-      return `I don't have specific information about "${question}". Please try asking something related to programming, web development, or computer science.`;
-    }
-    
-    // Combine document contents
-    const context = documents.map(doc => doc.content).join(' ');
-    
-    // Generate a simple response based on the context
-    if (lowerQuestion.includes('what is') || lowerQuestion.includes('definition')) {
-      return `Based on my knowledge: ${context.split('.')[0]}.`;
-    }
-    
-    if (lowerQuestion.includes('how to')) {
-      return `To address your question about "${question}", here's what I found: ${context}`;
-    }
-    
-    // Default response using the context
-    return `Regarding your question about "${question}": ${context}`;
+  {
+    id: '3',
+    title: 'HTML Structure',
+    content: 'HTML (HyperText Markup Language) is the standard markup language for creating web pages. It uses tags to structure content and create the foundation of web pages. Example: <h1>Title</h1>, <p>Paragraph</p>, <div>Container</div>',
+    category: 'web-development',
+    tags: ['html', 'markup', 'structure', 'web', 'hypertext']
   },
-  
-  /**
-   * Get recent queries for a user
-   */
-  async getUserQueryHistory(userId: number): Promise<LLMQuery[]> {
-    return await databaseService.getUserLLMQueries(userId, 10);
+  {
+    id: '4',
+    title: 'CSS Styling',
+    content: 'CSS (Cascading Style Sheets) is used to style and layout web pages. It controls colors, fonts, spacing, and responsive design. Example: .button { background-color: blue; padding: 10px; border-radius: 5px; }',
+    category: 'web-development',
+    tags: ['css', 'styling', 'design', 'layout', 'cascading']
+  },
+  {
+    id: '5',
+    title: 'React Components',
+    content: 'React is a JavaScript library for building user interfaces. Components are reusable UI pieces that can be composed together to create complex applications. Example: function Welcome(props) { return <h1>Hello, {props.name}</h1>; }',
+    category: 'frontend',
+    tags: ['react', 'components', 'ui', 'javascript', 'jsx']
+  },
+  {
+    id: '6',
+    title: 'Node.js Backend',
+    content: 'Node.js is a JavaScript runtime that allows you to run JavaScript on the server side. It\'s perfect for building scalable network applications. Example: const http = require("http"); const server = http.createServer((req, res) => { res.end("Hello World"); });',
+    category: 'backend',
+    tags: ['nodejs', 'backend', 'server', 'javascript', 'runtime']
+  },
+  {
+    id: '7',
+    title: 'SQL Database Queries',
+    content: 'SQL (Structured Query Language) is used to manage and manipulate relational databases. It allows you to create, read, update, and delete data. Example: SELECT * FROM users WHERE age > 18; INSERT INTO users (name, email) VALUES ("John", "john@email.com");',
+    category: 'database',
+    tags: ['sql', 'database', 'queries', 'relational', 'mysql']
+  },
+  {
+    id: '8',
+    title: 'Git Version Control',
+    content: 'Git is a distributed version control system that tracks changes in source code. It enables collaboration and maintains a history of all changes. Example: git add . git commit -m "Add new feature" git push origin main',
+    category: 'tools',
+    tags: ['git', 'version-control', 'collaboration', 'development', 'vcs']
+  },
+  {
+    id: '9',
+    title: 'TypeScript Fundamentals',
+    content: 'TypeScript is a superset of JavaScript that adds static typing to the language. It helps catch errors at compile time and improves code maintainability. Example: interface User { name: string; age: number; } const user: User = { name: "John", age: 25 };',
+    category: 'programming',
+    tags: ['typescript', 'typing', 'javascript', 'superset', 'ts']
+  },
+  {
+    id: '10',
+    title: 'REST API Design',
+    content: 'REST APIs use HTTP methods (GET, POST, PUT, DELETE) to perform operations on resources. They follow stateless architecture and use JSON for data exchange. Example: GET /api/users, POST /api/users, PUT /api/users/1, DELETE /api/users/1',
+    category: 'backend',
+    tags: ['rest', 'api', 'http', 'json', 'endpoints']
+  },
+  {
+    id: '11',
+    title: 'Responsive Web Design',
+    content: 'Responsive design ensures websites work well on all devices and screen sizes. It uses CSS media queries and flexible layouts. Example: @media (max-width: 768px) { .container { width: 100%; padding: 10px; } }',
+    category: 'web-development',
+    tags: ['responsive', 'design', 'mobile', 'css', 'media-queries']
+  },
+  {
+    id: '12',
+    title: 'Async JavaScript',
+    content: 'Asynchronous JavaScript allows code to run in the background without blocking other operations. It uses callbacks, promises, and async/await. Example: async function fetchData() { const response = await fetch("/api/data"); return response.json(); }',
+    category: 'programming',
+    tags: ['async', 'javascript', 'promises', 'await', 'callbacks']
+  },
+  {
+    id: '13',
+    title: 'MongoDB NoSQL',
+    content: 'MongoDB is a NoSQL database that stores data in flexible, JSON-like documents. It\'s great for applications with changing data structures. Example: db.users.insertOne({ name: "John", email: "john@email.com", age: 25 })',
+    category: 'database',
+    tags: ['mongodb', 'nosql', 'document', 'database', 'bson']
+  },
+  {
+    id: '14',
+    title: 'Docker Containers',
+    content: 'Docker allows you to package applications with their dependencies into containers. It ensures consistency across different environments. Example: FROM node:16 WORKDIR /app COPY package*.json ./ RUN npm install COPY . . EXPOSE 3000 CMD ["npm", "start"]',
+    category: 'devops',
+    tags: ['docker', 'containers', 'deployment', 'devops', 'virtualization']
+  },
+  {
+    id: '15',
+    title: 'Testing with Jest',
+    content: 'Jest is a JavaScript testing framework that makes it easy to write and run tests. It provides mocking, assertions, and code coverage. Example: test("adds 1 + 2 to equal 3", () => { expect(sum(1, 2)).toBe(3); });',
+    category: 'testing',
+    tags: ['jest', 'testing', 'javascript', 'unit-tests', 'mocking']
   }
-};
+];
+
+// Simple text similarity function using keyword matching
+function calculateSimilarity(query: string, document: Document): number {
+  const queryWords = query.toLowerCase().split(/\s+/);
+  const documentText = `${document.title} ${document.content} ${document.tags.join(' ')}`.toLowerCase();
+  
+  let score = 0;
+  queryWords.forEach(word => {
+    if (documentText.includes(word)) {
+      score += 1;
+    }
+  });
+  
+  // Bonus for title matches
+  if (document.title.toLowerCase().includes(query.toLowerCase())) {
+    score += 2;
+  }
+  
+  // Bonus for tag matches
+  document.tags.forEach(tag => {
+    if (query.toLowerCase().includes(tag)) {
+      score += 1.5;
+    }
+  });
+  
+  return score;
+}
+
+// Extract relevant text snippet from document
+function extractRelevantText(query: string, document: Document): string {
+  const queryWords = query.toLowerCase().split(/\s+/);
+  const sentences = document.content.split(/[.!?]+/);
+  
+  let bestSentence = sentences[0];
+  let bestScore = 0;
+  
+  sentences.forEach(sentence => {
+    let score = 0;
+    queryWords.forEach(word => {
+      if (sentence.toLowerCase().includes(word)) {
+        score += 1;
+      }
+    });
+    if (score > bestScore) {
+      bestScore = score;
+      bestSentence = sentence;
+    }
+  });
+  
+  return bestSentence.trim();
+}
+
+// Main RAG function
+export async function ragQuery(query: string, maxResults: number = 3): Promise<SearchResult[]> {
+  try {
+    // Simulate async processing
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Calculate similarity scores for all documents
+    const results: SearchResult[] = KNOWLEDGE_BASE.map(document => ({
+      document,
+      score: calculateSimilarity(query, document),
+      relevantText: extractRelevantText(query, document)
+    }));
+    
+    // Sort by score and return top results
+    return results
+      .filter(result => result.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, maxResults);
+      
+  } catch (error) {
+    console.error('RAG query error:', error);
+    return [];
+  }
+}
+
+// Generate response based on search results
+export function generateResponse(query: string, searchResults: SearchResult[]): string {
+  if (searchResults.length === 0) {
+    return "I don't have specific information about that topic. Could you try rephrasing your question or ask about programming, web development, or coding concepts?";
+  }
+  
+  const topResult = searchResults[0];
+  
+  if (topResult.score >= 3) {
+    return `Based on your question about "${query}", here's what I found:\n\n${topResult.relevantText}\n\nThis information comes from our knowledge base about ${topResult.document.title}.`;
+  } else if (topResult.score >= 1) {
+    return `I found some related information about "${query}":\n\n${topResult.relevantText}\n\nThis might be helpful, but you may want to be more specific with your question.`;
+  } else {
+    return "I found some loosely related information, but it might not directly answer your question. Could you try being more specific?";
+  }
+}
+
+// Test function for RAG accuracy
+export async function testRAGAccuracy(): Promise<{ testCase: string; result: string; accuracy: string }[]> {
+  const testCases = [
+    {
+      query: "What is JavaScript?",
+      expected: "javascript",
+      description: "Simple known query"
+    },
+    {
+      query: "How do I write code in JS?",
+      expected: "javascript",
+      description: "Paraphrased query"
+    },
+    {
+      query: "What's the weather like?",
+      expected: "none",
+      description: "Out-of-scope query"
+    }
+  ];
+  
+  const results = [];
+  
+  for (const testCase of testCases) {
+    const searchResults = await ragQuery(testCase.query);
+    const response = generateResponse(testCase.query, searchResults);
+    
+    let accuracy = "Low";
+    if (testCase.expected === "none" && searchResults.length === 0) {
+      accuracy = "High";
+    } else if (searchResults.length > 0 && searchResults[0].document.tags.includes(testCase.expected)) {
+      accuracy = "High";
+    } else if (searchResults.length > 0) {
+      accuracy = "Medium";
+    }
+    
+    results.push({
+      testCase: testCase.description,
+      result: response.substring(0, 100) + "...",
+      accuracy
+    });
+  }
+  
+  return results;
+}

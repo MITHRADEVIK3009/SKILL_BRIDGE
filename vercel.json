@@ -3,6 +3,7 @@
   "name": "skillbridge",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "installCommand": "npm install",
   "rewrites": [
     {
       "source": "/(.*)",
@@ -27,5 +28,10 @@
         }
       ]
     }
-  ]
+  ],
+  "functions": {
+    "src/**/*.ts": {
+      "runtime": "nodejs18.x"
+    }
+  }
 }

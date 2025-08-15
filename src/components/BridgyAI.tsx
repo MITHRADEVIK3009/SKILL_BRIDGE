@@ -6,6 +6,7 @@ import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { useVoiceRecognition } from '../hooks/useVoiceRecognition';
 import { useTextToSpeech } from '../hooks/useTextToSpeech';
+import { ragQuery, generateResponse } from '../services/ragService';
 
 interface Message {
   id: string;
@@ -24,7 +25,7 @@ const BridgyAI: React.FC = () => {
       timestamp: new Date()
     }
   ]);
-  const [isListening, setIsListening] = useState(false);
+
   const [textInput, setTextInput] = useState('');
   const [selectedLanguage, setSelectedLanguage] = useState('en-US');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -42,9 +43,10 @@ const BridgyAI: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
-  const processUserQuery = (query: string): string => {
+  const processUserQuery = async (query: string): Promise<string> => {
     const lowerQuery = query.toLowerCase();
     
+    // Handle specific SkillBridge features
     if (lowerQuery.includes('progress') || lowerQuery.includes('stats')) {
       return 'You can check your progress by going to your Dashboard. There you\'ll see your current level, XP, completed courses, and earned badges. Would you like me to guide you there?';
     }
@@ -69,11 +71,18 @@ const BridgyAI: React.FC = () => {
       return 'I can help you with: \n• Navigating courses and lessons\n• Tracking progress and badges\n• Understanding the point system\n• Using voice commands\n• Finding specific features\n\nWhat would you like to know?';
     }
     
-    // Default response
-    return 'I\'m here to help you succeed with SkillBridge! You can ask me about courses, progress tracking, badges, voice commands, or navigation. What would you like to learn about?';
+    // Use RAG for programming and technical questions
+    try {
+      const searchResults = await ragQuery(query, 3);
+      const response = generateResponse(query, searchResults);
+      return response;
+    } catch (error) {
+      console.error('RAG query error:', error);
+      return 'I\'m here to help you succeed with SkillBridge! You can ask me about courses, progress tracking, badges, voice commands, or programming concepts. What would you like to learn about?';
+    }
   };
 
-  const handleVoiceCommand = (command: string) => {
+  const handleVoiceCommand = async (command: string) => {
     if (!command.trim()) return;
     
     const userMessage: Message = {
@@ -83,7 +92,9 @@ const BridgyAI: React.FC = () => {
       timestamp: new Date()
     };
     
-    const response = processUserQuery(command);
+    setMessages(prev => [...prev, userMessage]);
+    
+    const response = await processUserQuery(command);
     const aiMessage: Message = {
       id: (Date.now() + 1).toString(),
       text: response,
@@ -91,22 +102,20 @@ const BridgyAI: React.FC = () => {
       timestamp: new Date()
     };
     
-    setMessages(prev => [...prev, userMessage, aiMessage]);
+    setMessages(prev => [...prev, aiMessage]);
     speak(response);
   };
 
-  const { startListening, stopListening } = useVoiceRecognition({
+  const { startListening, stopListening, isListening: voiceListening } = useVoiceRecognition({
     onTranscript: handleVoiceCommand,
-    language: 'en-US'
+    language: selectedLanguage
   });
 
   const toggleListening = () => {
-    if (isListening) {
+    if (voiceListening) {
       stopListening();
-      setIsListening(false);
     } else {
       startListening();
-      setIsListening(true);
     }
   };
 
@@ -141,7 +150,7 @@ const BridgyAI: React.FC = () => {
               <div className="flex items-center gap-2">
                 <Bot className="h-5 w-5" />
                 <span className="font-semibold">Bridgy AI</span>
-                {isListening && (
+                {voiceListening && (
                   <div className="flex gap-1">
                     <div className="w-1 h-3 bg-green-400 rounded animate-pulse"></div>
                     <div className="w-1 h-4 bg-green-400 rounded animate-pulse delay-75"></div>
@@ -260,13 +269,13 @@ const BridgyAI: React.FC = () => {
                 <Button
                   onClick={toggleListening}
                   className={`h-10 w-10 rounded-full transition-all duration-300 ${
-                    isListening
+                    voiceListening
                       ? 'bg-red-500 hover:bg-red-600 animate-pulse'
                       : 'bg-blue-600 hover:bg-blue-700'
                   }`}
                   size="sm"
                 >
-                  {isListening ? (
+                  {voiceListening ? (
                     <MicOff className="h-4 w-4 text-white" />
                   ) : (
                     <Mic className="h-4 w-4 text-white" />
@@ -274,7 +283,7 @@ const BridgyAI: React.FC = () => {
                 </Button>
               </div>
               <div className="text-xs text-gray-500 text-center">
-                {isListening ? 'Listening... Speak now!' : 'Click mic to speak or type above'}
+                {voiceListening ? 'Listening... Speak now!' : 'Click mic to speak or type above'}
               </div>
             </div>
           </Card>
