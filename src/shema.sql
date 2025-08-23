@@ -1,339 +1,320 @@
--- Enable necessary extensions
-create extension if not exists "uuid-ossp";
-create extension if not exists "pgcrypto";
+-- =====================================================
+-- SKILLBRIDGE FIXED DATABASE SCHEMA
+-- =====================================================
 
--- Users table with enhanced fields for authentication and gamification
-create table public.users (
-  user_id uuid primary key default uuid_generate_v4(),
-  username text unique not null,
-  email text unique not null,
-  password_hash text,
-  registration_date timestamptz default now(),
-  last_login timestamptz,
-  points integer default 0,
-  streak integer default 0,
-  level integer default 1,
-  experience_points integer default 0,
-  badges text[] default array[]::text[],
-  profile_picture text,
-  preferred_language text default 'en-US',
-  social_providers jsonb default '{}'::jsonb,
-  is_email_verified boolean default false,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+-- =====================================================
+-- 1. CORE USER MANAGEMENT
+-- =====================================================
+CREATE TABLE users (
+    user_id SERIAL PRIMARY KEY,
+    username VARCHAR(255) UNIQUE NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    registration_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_login TIMESTAMP,
+    
+    -- Gamification fields
+    points INTEGER DEFAULT 0 CHECK (points >= 0),
+    level INTEGER DEFAULT 1 CHECK (level >= 1),
+    experience_points INTEGER DEFAULT 0 CHECK (experience_points >= 0),
+    streak INTEGER DEFAULT 0 CHECK (streak >= 0),
+    badges JSONB DEFAULT '[]'::JSONB,
+    profile_picture VARCHAR(255),
+    
+    -- Voice AI preferences
+    voice_enabled BOOLEAN DEFAULT true,
+    preferred_voice VARCHAR(50) DEFAULT 'en-US',
+    
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Courses table
-create table public.courses (
-  course_id serial primary key,
-  title text not null,
-  description text,
-  difficulty text check (difficulty in ('beginner', 'intermediate', 'advanced')),
-  thumbnail_url text,
-  category text,
-  duration_hours integer,
-  prerequisites text[],
-  learning_objectives text[],
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
+-- =====================================================
+-- 2. RAG KNOWLEDGE BASE SYSTEM
+-- =====================================================
+CREATE TABLE programming_concepts (
+    concept_id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    title VARCHAR(500) NOT NULL,
+    content TEXT NOT NULL,
+    category VARCHAR(100) NOT NULL,
+    difficulty VARCHAR(50) NOT NULL CHECK (difficulty IN ('beginner', 'intermediate', 'advanced')),
+    estimated_time INTEGER CHECK (estimated_time > 0),
+    prerequisites TEXT[],
+    related_concepts TEXT[],
+    
+    roadmap_url VARCHAR(500),
+    tools JSONB DEFAULT '[]'::JSONB,
+    timeline JSONB DEFAULT '{}'::JSONB,
+    resources JSONB DEFAULT '{}'::JSONB,
+    
+    tags TEXT[],
+    search_index tsvector,
+    
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Lessons table
-create table public.lessons (
-  lesson_id serial primary key,
-  course_id integer references courses(course_id) on delete cascade,
-  title text not null,
-  content text,
-  video_url text,
-  order_index integer not null,
-  duration_minutes integer,
-  resources jsonb default '{}'::jsonb,
-  quiz_questions jsonb default '[]'::jsonb,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
+-- Function + Trigger to keep search_index updated
+CREATE OR REPLACE FUNCTION update_programming_concepts_search_index()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.search_index :=
+    to_tsvector('english',
+      COALESCE(NEW.title, '') || ' ' ||
+      COALESCE(NEW.content, '') || ' ' ||
+      array_to_string(COALESCE(NEW.tags, '{}'), ' ')
+    );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_update_programming_concepts_search
+BEFORE INSERT OR UPDATE ON programming_concepts
+FOR EACH ROW EXECUTE FUNCTION update_programming_concepts_search_index();
+
+-- =====================================================
+-- 3. REAL-TIME CACHING SYSTEM
+-- =====================================================
+CREATE TABLE cache_store (
+    cache_key VARCHAR(255) PRIMARY KEY,
+    cache_value JSONB NOT NULL,
+    cache_type VARCHAR(50) NOT NULL CHECK (cache_type IN ('api', 'rag', 'user', 'challenge')),
+    expiration_time TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_accessed TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    access_count INTEGER DEFAULT 0 CHECK (access_count >= 0)
 );
 
--- User course enrollments and progress
-create table public.user_courses (
-  user_course_id serial primary key,
-  user_id uuid references users(user_id) on delete cascade,
-  course_id integer references courses(course_id) on delete cascade,
-  enrollment_date timestamptz default now(),
-  progress integer default 0 check (progress >= 0 and progress <= 100),
-  last_accessed timestamptz,
-  completion_date timestamptz,
-  certificate_earned boolean default false,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now(),
-  unique(user_id, course_id)
+CREATE TABLE cache_statistics (
+    stat_id SERIAL PRIMARY KEY,
+    cache_type VARCHAR(50) NOT NULL,
+    hit_count INTEGER DEFAULT 0 CHECK (hit_count >= 0),
+    miss_count INTEGER DEFAULT 0 CHECK (miss_count >= 0),
+    total_requests INTEGER DEFAULT 0 CHECK (total_requests >= 0),
+    avg_response_time_ms DECIMAL(10,2) CHECK (avg_response_time_ms >= 0),
+    date DATE DEFAULT CURRENT_DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(cache_type, date)
 );
 
--- User lesson progress
-create table public.user_lesson_progress (
-  user_lesson_id serial primary key,
-  user_id uuid references users(user_id) on delete cascade,
-  lesson_id integer references lessons(lesson_id) on delete cascade,
-  is_completed boolean default false,
-  time_spent integer default 0, -- in minutes
-  completion_date timestamptz,
-  quiz_score integer,
-  notes text,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now(),
-  unique(user_id, lesson_id)
+-- =====================================================
+-- 4. DAILY CHALLENGE SYSTEM
+-- =====================================================
+CREATE TABLE challenges (
+    challenge_id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    problem_statement TEXT NOT NULL,
+    solution_template TEXT,
+    difficulty VARCHAR(50) NOT NULL CHECK (difficulty IN ('beginner', 'intermediate', 'advanced')),
+    category VARCHAR(100) NOT NULL,
+    points_reward INTEGER NOT NULL CHECK (points_reward > 0),
+    input_example TEXT,
+    expected_output TEXT,
+    hints TEXT[],
+    tags TEXT[],
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Challenges/Coding Exercises
-create table public.challenges (
-  challenge_id serial primary key,
-  title text not null,
-  description text,
-  problem_statement text not null,
-  solution_template text,
-  test_cases jsonb not null,
-  difficulty text check (difficulty in ('easy', 'medium', 'hard')),
-  points_reward integer default 10,
-  category text,
-  tags text[],
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
+CREATE TABLE daily_challenge_assignments (
+    assignment_id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE NOT NULL,
+    challenge_id INTEGER REFERENCES challenges(challenge_id) ON DELETE CASCADE NOT NULL,
+    assignment_date DATE NOT NULL,
+    completed BOOLEAN DEFAULT FALSE,
+    completed_at TIMESTAMP,
+    user_answer TEXT,
+    points_earned INTEGER DEFAULT 0 CHECK (points_earned >= 0),
+    repetition_count INTEGER DEFAULT 1 CHECK (repetition_count >= 1),
+    last_shown_date DATE,
+    
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    UNIQUE(user_id, assignment_date),
+    CHECK ((completed = FALSE) OR (completed = TRUE AND completed_at IS NOT NULL))
 );
 
--- User challenge attempts
-create table public.user_challenges (
-  user_challenge_id serial primary key,
-  user_id uuid references users(user_id) on delete cascade,
-  challenge_id integer references challenges(challenge_id) on delete cascade,
-  solution text,
-  is_completed boolean default false,
-  completion_date timestamptz,
-  execution_time integer, -- in milliseconds
-  attempts_count integer default 1,
-  points_earned integer default 0,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
+-- =====================================================
+-- 5. VOICE AI ASSISTANT
+-- =====================================================
+CREATE TABLE voice_interactions (
+    interaction_id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    session_id VARCHAR(255),
+    voice_command TEXT,
+    audio_file_url VARCHAR(500),
+    language_detected VARCHAR(10),
+    confidence_score DECIMAL(3,2) CHECK (confidence_score >= 0 AND confidence_score <= 1),
+    response_text TEXT,
+    response_audio_url VARCHAR(500),
+    intent_detected VARCHAR(100),
+    entities_extracted JSONB,
+    processing_time_ms INTEGER CHECK (processing_time_ms >= 0),
+    llm_model_used VARCHAR(100),
+    tokens_used INTEGER CHECK (tokens_used >= 0),
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Badges system
-create table public.badges (
-  badge_id serial primary key,
-  name text unique not null,
-  description text,
-  icon_url text,
-  criteria jsonb not null, -- JSON defining the criteria for earning this badge
-  rarity text check (rarity in ('common', 'rare', 'epic', 'legendary')),
-  points_value integer default 5,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
+CREATE TABLE voice_ai_sessions (
+    session_id VARCHAR(255) PRIMARY KEY,
+    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+    start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    end_time TIMESTAMP,
+    total_interactions INTEGER DEFAULT 0 CHECK (total_interactions >= 0),
+    session_context JSONB,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CHECK (end_time IS NULL OR end_time >= start_time)
 );
 
--- User badges (many-to-many)
-create table public.user_badges (
-  user_badge_id serial primary key,
-  user_id uuid references users(user_id) on delete cascade,
-  badge_id integer references badges(badge_id) on delete cascade,
-  earned_date timestamptz default now(),
-  unique(user_id, badge_id)
+-- =====================================================
+-- 6. GAMIFICATION SYSTEM
+-- =====================================================
+CREATE TABLE leaderboard (
+    leaderboard_id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE NOT NULL,
+    rank INTEGER CHECK (rank > 0),
+    total_points INTEGER DEFAULT 0 CHECK (total_points >= 0),
+    weekly_points INTEGER DEFAULT 0 CHECK (weekly_points >= 0),
+    monthly_points INTEGER DEFAULT 0 CHECK (monthly_points >= 0),
+    all_time_points INTEGER DEFAULT 0 CHECK (all_time_points >= 0),
+    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id)
 );
 
--- Leaderboard (materialized view will be created later)
-create table public.leaderboard (
-  leaderboard_id serial primary key,
-  user_id uuid references users(user_id) on delete cascade,
-  rank integer,
-  total_points integer,
-  weekly_points integer,
-  monthly_points integer,
-  last_updated timestamptz default now(),
-  unique(user_id)
+CREATE TABLE badges (
+    badge_id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL UNIQUE,
+    description TEXT,
+    icon_url VARCHAR(255),
+    criteria TEXT,
+    points_reward INTEGER DEFAULT 0 CHECK (points_reward >= 0),
+    badge_type VARCHAR(50) CHECK (badge_type IN ('achievement', 'streak', 'special')),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Voice interactions logging
-create table public.voice_interactions (
-  interaction_id serial primary key,
-  user_id uuid references users(user_id) on delete cascade,
-  voice_command text not null,
-  response text,
-  intent text,
-  confidence_score real,
-  language text default 'en-US',
-  timestamp timestamptz default now()
+CREATE TABLE user_badges (
+    user_badge_id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE NOT NULL,
+    badge_id INTEGER REFERENCES badges(badge_id) ON DELETE CASCADE NOT NULL,
+    earned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    context JSONB,
+    UNIQUE(user_id, badge_id)
 );
 
--- LLM queries and responses
-create table public.llm_queries (
-  query_id serial primary key,
-  user_id uuid references users(user_id) on delete cascade,
-  query_text text not null,
-  response_text text,
-  source_documents jsonb default '[]'::jsonb,
-  llm_model text,
-  response_time integer, -- in milliseconds
-  tokens_used integer,
-  language text default 'en-US',
-  is_local_model boolean default false,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
+CREATE TABLE user_progress (
+    progress_id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE NOT NULL,
+    level INTEGER DEFAULT 1 CHECK (level >= 1),
+    experience_points INTEGER DEFAULT 0 CHECK (experience_points >= 0),
+    points_to_next_level INTEGER DEFAULT 100 CHECK (points_to_next_level > 0),
+    total_lessons_completed INTEGER DEFAULT 0 CHECK (total_lessons_completed >= 0),
+    total_challenges_completed INTEGER DEFAULT 0 CHECK (total_challenges_completed >= 0),
+    longest_streak INTEGER DEFAULT 0 CHECK (longest_streak >= 0),
+    current_streak INTEGER DEFAULT 0 CHECK (current_streak >= 0),
+    last_activity_date DATE DEFAULT CURRENT_DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id)
 );
 
--- Learning paths
-create table public.learning_paths (
-  path_id serial primary key,
-  title text not null,
-  description text,
-  difficulty text check (difficulty in ('beginner', 'intermediate', 'advanced')),
-  estimated_hours integer,
-  thumbnail_url text,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
+-- =====================================================
+-- 7. COURSE & LEARNING
+-- =====================================================
+CREATE TABLE courses (
+    course_id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    difficulty VARCHAR(50) CHECK (difficulty IN ('beginner', 'intermediate', 'advanced')),
+    thumbnail_url VARCHAR(255),
+    concept_id INTEGER REFERENCES programming_concepts(concept_id) ON DELETE SET NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Course paths (many-to-many between learning_paths and courses)
-create table public.course_paths (
-  course_path_id serial primary key,
-  path_id integer references learning_paths(path_id) on delete cascade,
-  course_id integer references courses(course_id) on delete cascade,
-  order_in_path integer not null,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now(),
-  unique(path_id, course_id)
+CREATE TABLE lessons (
+    lesson_id SERIAL PRIMARY KEY,
+    course_id INTEGER REFERENCES courses(course_id) ON DELETE CASCADE NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    content TEXT,
+    "order" INTEGER NOT NULL CHECK ("order" > 0),
+    resources JSONB DEFAULT '[]'::JSONB,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(course_id, "order")
 );
 
--- User study sessions
-create table public.study_sessions (
-  session_id serial primary key,
-  user_id uuid references users(user_id) on delete cascade,
-  session_type text not null, -- 'lesson', 'challenge', 'free_study'
-  topic text,
-  started_at timestamptz default now(),
-  ended_at timestamptz,
-  duration integer, -- in minutes
-  breaks_taken integer default 0,
-  goals_set text[],
-  goals_achieved text[],
-  notes text
+CREATE TABLE user_courses (
+    user_course_id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE NOT NULL,
+    course_id INTEGER REFERENCES courses(course_id) ON DELETE CASCADE NOT NULL,
+    enrollment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    progress FLOAT DEFAULT 0 CHECK (progress >= 0 AND progress <= 1),
+    last_accessed TIMESTAMP,
+    completed_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, course_id)
 );
 
--- User notes
-create table public.user_notes (
-  note_id serial primary key,
-  user_id uuid references users(user_id) on delete cascade,
-  title text not null,
-  content text not null,
-  topic text,
-  tags text[],
-  is_favorite boolean default false,
-  lesson_id integer references lessons(lesson_id) on delete set null,
-  challenge_id integer references challenges(challenge_id) on delete set null,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
+-- =====================================================
+-- 8. FEEDBACK
+-- =====================================================
+CREATE TABLE user_feedback (
+    feedback_id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(user_id) ON DELETE SET NULL,
+    feedback_type VARCHAR(50) CHECK (feedback_type IN ('general', 'bug', 'feature', 'content')),
+    rating INTEGER CHECK (rating >= 1 AND rating <= 5),
+    feedback_text TEXT,
+    technical_details JSONB,
+    user_agent TEXT,
+    page_url VARCHAR(500),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Study materials
-create table public.study_materials (
-  material_id serial primary key,
-  title text not null,
-  description text,
-  file_url text,
-  file_type text,
-  category text,
-  topic text,
-  difficulty text check (difficulty in ('beginner', 'intermediate', 'advanced')),
-  size_mb real,
-  download_count integer default 0,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
-);
+-- =====================================================
+-- 9. INDEXES
+-- =====================================================
+CREATE INDEX idx_programming_concepts_search ON programming_concepts USING GIN(search_index);
+CREATE INDEX idx_programming_concepts_tags ON programming_concepts USING GIN(tags);
 
--- User material downloads
-create table public.user_material_downloads (
-  download_id serial primary key,
-  user_id uuid references users(user_id) on delete cascade,
-  material_id integer references study_materials(material_id) on delete cascade,
-  downloaded_at timestamptz default now()
-);
+-- =====================================================
+-- 11. TRIGGERS
+-- =====================================================
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
--- Password reset tokens
-create table public.password_reset_tokens (
-  token_id serial primary key,
-  user_id uuid references users(user_id) on delete cascade,
-  token text unique not null,
-  expires_at timestamptz not null,
-  used boolean default false,
-  created_at timestamptz default now()
-);
+CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- Create indexes for better performance
-create index idx_users_email on users(email);
-create index idx_users_username on users(username);
-create index idx_user_courses_user_id on user_courses(user_id);
-create index idx_user_courses_course_id on user_courses(course_id);
-create index idx_user_lesson_progress_user_id on user_lesson_progress(user_id);
-create index idx_user_challenges_user_id on user_challenges(user_id);
-create index idx_voice_interactions_user_id on voice_interactions(user_id);
-create index idx_llm_queries_user_id on llm_queries(user_id);
-create index idx_study_sessions_user_id on study_sessions(user_id);
-create index idx_user_notes_user_id on user_notes(user_id);
+CREATE TRIGGER update_programming_concepts_updated_at BEFORE UPDATE ON programming_concepts
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- Enable Row Level Security (RLS)
-alter table users enable row level security;
-alter table user_courses enable row level security;
-alter table user_lesson_progress enable row level security;
-alter table user_challenges enable row level security;
-alter table voice_interactions enable row level security;
-alter table llm_queries enable row level security;
-alter table study_sessions enable row level security;
-alter table user_notes enable row level security;
-alter table user_material_downloads enable row level security;
+CREATE TRIGGER update_challenges_updated_at BEFORE UPDATE ON challenges
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- RLS Policies
-create policy "Users can view own profile" on users for select using (auth.uid() = user_id);
-create policy "Users can update own profile" on users for update using (auth.uid() = user_id);
+CREATE TRIGGER update_daily_challenge_assignments_updated_at BEFORE UPDATE ON daily_challenge_assignments
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-create policy "Users can view own course enrollments" on user_courses for select using (auth.uid() = user_id);
-create policy "Users can manage own course enrollments" on user_courses for all using (auth.uid() = user_id);
+CREATE TRIGGER update_user_progress_updated_at BEFORE UPDATE ON user_progress
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-create policy "Users can view own lesson progress" on user_lesson_progress for select using (auth.uid() = user_id);
-create policy "Users can manage own lesson progress" on user_lesson_progress for all using (auth.uid() = user_id);
+CREATE TRIGGER update_courses_updated_at BEFORE UPDATE ON courses
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-create policy "Users can view own challenges" on user_challenges for select using (auth.uid() = user_id);
-create policy "Users can manage own challenges" on user_challenges for all using (auth.uid() = user_id);
+CREATE TRIGGER update_lessons_updated_at BEFORE UPDATE ON lessons
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
-create policy "Users can view own voice interactions" on voice_interactions for select using (auth.uid() = user_id);
-create policy "Users can create own voice interactions" on voice_interactions for insert with check (auth.uid() = user_id);
-
-create policy "Users can view own LLM queries" on llm_queries for select using (auth.uid() = user_id);
-create policy "Users can create own LLM queries" on llm_queries for insert with check (auth.uid() = user_id);
-
-create policy "Users can view own study sessions" on study_sessions for select using (auth.uid() = user_id);
-create policy "Users can manage own study sessions" on study_sessions for all using (auth.uid() = user_id);
-
-create policy "Users can view own notes" on user_notes for select using (auth.uid() = user_id);
-create policy "Users can manage own notes" on user_notes for all using (auth.uid() = user_id);
-
-create policy "Users can view own downloads" on user_material_downloads for select using (auth.uid() = user_id);
-create policy "Users can create own downloads" on user_material_downloads for insert with check (auth.uid() = user_id);
-
--- Functions for updating updated_at timestamps
-create or replace function update_updated_at_column()
-returns trigger as $$
-begin
-  new.updated_at = now();
-  return new;
-end;
-$$ language 'plpgsql';
-
--- Add triggers for updated_at
-create trigger update_users_updated_at before update on users for each row execute procedure update_updated_at_column();
-create trigger update_courses_updated_at before update on courses for each row execute procedure update_updated_at_column();
-create trigger update_lessons_updated_at before update on lessons for each row execute procedure update_updated_at_column();
-create trigger update_user_courses_updated_at before update on user_courses for each row execute procedure update_updated_at_column();
-create trigger update_user_lesson_progress_updated_at before update on user_lesson_progress for each row execute procedure update_updated_at_column();
-create trigger update_challenges_updated_at before update on challenges for each row execute procedure update_updated_at_column();
-create trigger update_user_challenges_updated_at before update on user_challenges for each row execute procedure update_updated_at_column();
-create trigger update_badges_updated_at before update on badges for each row execute procedure update_updated_at_column();
-create trigger update_learning_paths_updated_at before update on learning_paths for each row execute procedure update_updated_at_column();
-create trigger update_course_paths_updated_at before update on course_paths for each row execute procedure update_updated_at_column();
-create trigger update_study_materials_updated_at before update on study_materials for each row execute procedure update_updated_at_column();
-create trigger update_user_notes_updated_at before update on user_notes for each row execute procedure update_updated_at_column();
-create trigger update_llm_queries_updated_at before update on llm_queries for each row execute procedure update_updated_at_column();
+CREATE TRIGGER update_user_courses_updated_at BEFORE UPDATE ON user_courses
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
